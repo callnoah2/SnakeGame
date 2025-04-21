@@ -6,7 +6,48 @@
 .global main
 .global _start
 _start:
+    BL menu
     BL main
+
+printString:
+    // Input: X0 = pointer to string, X1 = starting column, X2 = row
+    MOV     X4, X0          // X4 holds pointer to string
+    MOV     X5, X1          // X5 holds current column
+.loop:
+    LDRB    W3, [X4], #1    // load next character, post increment pointer
+    CMP     W3, #0
+    BEQ     .done
+    LDR     X6, =tempchar   // temporary storage for char
+    STRB    W3, [X6]
+    MOV     X0, X5          // column
+    MOV     X1, X2          // row
+    MOV     X2, X6          // pointer to character in temp storage
+    SVC     #0x204         // print character
+    ADD     X5, X5, #1      // next column
+    B       .loop
+.done:
+    RET
+
+menu:
+    // Clear screen (using same system call as in main)
+    MOV     X0, #0
+    MOV     X8, #0x206
+    SVC     #0
+    // Print game title at row 3, column 5
+    LDR     X0, =menu_title
+    MOV     X1, #5
+    MOV     X2, #3
+    BL      printString
+    // Print author name at row 5, column 5
+    LDR     X0, =menu_author
+    MOV     X1, #5
+    MOV     X2, #5
+    BL      printString
+    // Print prompt at row 7, column 5
+    LDR     X0, =menu_prompt
+    MOV     X1, #5
+    MOV     X2, #7
+    BL      printString
 
 main:
     MOV     x9, #3                  // x9 will hold total elements in the list (snake length)
@@ -550,7 +591,11 @@ gethighscore:
     ADD     SP, SP, #32
     RET
 
-	.data
+    .data
+menu_title:   .asciz "Snake Game"
+menu_author:  .asciz "By Your Name"
+menu_prompt:  .asciz "Press space bar to start"
+tempchar:     .byte 0
 OutFileHandle: .word 0              // Initialize output file handle
 InFileHandle: .word 0               // Initialize input file handle
 chararray: .skip 80                 // Reserve space for 80 bytes
